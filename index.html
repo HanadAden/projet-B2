@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calculateur de calories</title>
+  <style>
+    :root{--bg:#f6f7fb;--card:#ffffff;--accent:#4f46e5;--muted:#6b7280}
+    *{box-sizing:border-box}
+    body{font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:var(--bg);color:#111}
+    .wrap{max-width:920px;margin:32px auto;padding:20px}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:0;color:var(--muted)}
+
+    .grid{display:grid;grid-template-columns:1fr 320px;gap:18px}
+    .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    select,input[type=number],input[type=text]{width:100%;padding:10px;border:1px solid #e6e9ef;border-radius:8px;font-size:14px}
+    .row{display:flex;gap:8px}
+    .row > *{flex:1}
+    button{background:var(--accent);color:#fff;border:none;padding:10px 12px;border-radius:8px;cursor:pointer}
+    button.ghost{background:transparent;color:var(--accent);border:1px solid #e6e9ef}
+
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;text-align:left;border-bottom:1px solid #f1f3f7;font-size:14px}
+    th{color:var(--muted);font-weight:600}
+
+    .total{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-weight:700}
+    .muted{color:var(--muted)}
+
+    @media (max-width:880px){.grid{grid-template-columns:1fr;}.wrap{padding:12px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Calculateur de calories</h1>
+        <p class="lead">Choisis des aliments, indique la quantité (g) — l'application calcule les calories totales.</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card" aria-labelledby="composer">
+        <h2 id="composer" style="font-size:16px;margin:0 0 10px 0">Ajouter un aliment</h2>
+
+        <label for="foodSelect">Aliment</label>
+        <select id="foodSelect" aria-label="Choisir un aliment"></select>
+
+        <div style="height:8px"></div>
+
+        <label for="grams">Quantité (grammes)</label>
+        <input id="grams" type="number" min="0" value="100" />
+
+        <div style="height:10px"></div>
+        <div class="row">
+          <button id="addBtn">Ajouter</button>
+          <button id="addCustomBtn" class="ghost">Personnalisé</button>
+        </div>
+
+        <hr style="margin:14px 0;border:none;border-top:1px solid #f1f3f7" />
+
+        <h3 style="margin:0 0 8px 0;font-size:15px">Aliments ajoutés</h3>
+        <div style="max-height:340px;overflow:auto;">
+          <table id="tbl">
+            <thead>
+              <tr><th>Aliment</th><th>g</th><th>kcal</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="total">
+          <div class="muted">Total</div>
+          <div id="totalCal">0 kcal</div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="resetBtn" class="ghost">Réinitialiser</button>
+          <button id="exportBtn">Exporter (copier)</button>
+        </div>
+      </section>
+
+      <aside class="card" aria-labelledby="preset">
+        <h2 id="preset" style="font-size:16px;margin:0 0 10px 0">Base d'aliments (kcal / 100 g)</h2>
+        <p class="muted" style="margin:0 0 10px 0">Tu peux ajouter un aliment personnalisé si besoin.</p>
+
+        <ul id="foodList" style="list-style:none;padding:0;margin:0;font-size:14px;line-height:1.9"></ul>
+
+        <hr style="margin:12px 0;border:none;border-top:1px solid #f1f3f7" />
+
+        <h3 style="margin:0 0 8px 0;font-size:15px">Ajouter un aliment personnalisé</h3>
+        <label for="customName">Nom</label>
+        <input id="customName" type="text" placeholder="Ex: Poire" />
+        <label for="customKcal" style="margin-top:8px">kcal (pour 100 g)</label>
+        <input id="customKcal" type="number" min="0" placeholder="Ex: 57" />
+        <div style="height:8px"></div>
+        <div class="row">
+          <button id="saveCustom">Ajouter à la liste</button>
+          <button id="clearCustom" class="ghost">Effacer</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // Données initiales (kcal pour 100 g)
+    const foodData = [
+      {name: 'Pomme', kcal: 52},
+      {name: 'Banane', kcal: 96},
+      {name: 'Pain (100g)', kcal: 265},
+      {name: 'Riz cuit', kcal: 130},
+      {name: 'Poulet (blanc cuit)', kcal: 165},
+      {name: 'Oeuf (1 unité ~50g)', kcal: 155},
+      {name: 'Lait (100g)', kcal: 42},
+      {name: 'Fromage (100g)', kcal: 402},
+      {name: 'Beurre (100g)', kcal: 717},
+      {name: 'Huile d\'olive (100g)', kcal: 884},
+      {name: 'Pommes de terre', kcal: 77},
+      {name: 'Sucre', kcal: 387},
+      {name: 'Yaourt nature', kcal: 59},
+      {name: 'Orange', kcal: 43},
+      {name: 'Avocat', kcal: 160}
+    ];
+
+    // Éléments du DOM
+    const foodSelect = document.getElementById('foodSelect');
+    const foodList = document.getElementById('foodList');
+    const gramsInput = document.getElementById('grams');
+    const addBtn = document.getElementById('addBtn');
+    const tblBody = document.querySelector('#tbl tbody');
+    const totalCalEl = document.getElementById('totalCal');
+    const resetBtn = document.getElementById('resetBtn');
+    const exportBtn = document.getElementById('exportBtn');
+
+    const customName = document.getElementById('customName');
+    const customKcal = document.getElementById('customKcal');
+    const saveCustom = document.getElementById('saveCustom');
+    const clearCustom = document.getElementById('clearCustom');
+    const addCustomBtn = document.getElementById('addCustomBtn');
+
+    let added = [];
+
+    function populateFoods(){
+      foodSelect.innerHTML = '';
+      foodData.forEach((f, idx)=>{
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = `${f.name} — ${f.kcal} kcal/100g`;
+        foodSelect.appendChild(opt);
+      });
+
+      foodList.innerHTML = '';
+      foodData.forEach(f=>{
+        const li = document.createElement('li');
+        li.textContent = `${f.name}: ${f.kcal} kcal / 100 g`;
+        foodList.appendChild(li);
+      });
+    }
+
+    function renderTable(){
+      tblBody.innerHTML = '';
+      let total = 0;
+      added.forEach((it, i)=>{
+        const tr = document.createElement('tr');
+        const tdName = document.createElement('td'); tdName.textContent = it.name;
+        const tdGr = document.createElement('td'); tdGr.textContent = `${it.grams}`;
+        const tdK = document.createElement('td'); tdK.textContent = `${formatKcal(it.cal)} kcal`;
+        const tdDel = document.createElement('td');
+        const btn = document.createElement('button'); btn.textContent = 'Supprimer'; btn.className='ghost';
+        btn.addEventListener('click', ()=>{ added.splice(i,1); renderTable(); });
+        tdDel.appendChild(btn);
+
+        tr.appendChild(tdName); tr.appendChild(tdGr); tr.appendChild(tdK); tr.appendChild(tdDel);
+        tblBody.appendChild(tr);
+        total += it.cal;
+      });
+      totalCalEl.textContent = formatKcal(total) + ' kcal';
+    }
+
+    function formatKcal(v){
+      return Number.isFinite(v) ? Math.round(v*100)/100 : 0;
+    }
+
+    addBtn.addEventListener('click', ()=>{
+      const idx = parseInt(foodSelect.value,10);
+      const grams = parseFloat(gramsInput.value);
+      if(isNaN(grams) || grams <= 0){ alert('Indique une quantité en grammes (> 0)'); return; }
+      const f = foodData[idx];
+      const calories = (f.kcal * grams) / 100;
+      added.push({name: f.name, grams: grams, cal: calories});
+      renderTable();
+    });
+
+    addCustomBtn.addEventListener('click', ()=>{
+      // pré-remplir la boîte de personnalisation
+      customName.focus();
+    });
+
+    saveCustom.addEventListener('click', ()=>{
+      const name = customName.value.trim();
+      const kcal = parseFloat(customKcal.value);
+      if(!name || isNaN(kcal) || kcal < 0){ alert('Nom et kcal valides requis'); return; }
+      foodData.push({name, kcal});
+      populateFoods();
+      customName.value=''; customKcal.value='';
+      alert('Aliment ajouté à la liste');
+    });
+
+    clearCustom.addEventListener('click', ()=>{ customName.value=''; customKcal.value=''; });
+
+    resetBtn.addEventListener('click', ()=>{ if(confirm('Effacer la liste ?')){ added = []; renderTable(); } });
+
+    exportBtn.addEventListener('click', ()=>{
+      let lines = ['Aliment\tg\tkcal'];
+      added.forEach(it => lines.push(`${it.name}\t${it.grams}\t${formatKcal(it.cal)}`));
+      lines.push('\nTotal:\t\t' + formatKcal(added.reduce((s,x)=>s+x.cal,0)) + ' kcal');
+      const text = lines.join('\n');
+      navigator.clipboard.writeText(text).then(()=> alert('Copié dans le presse-papiers'))
+        .catch(()=> alert('Impossible de copier, vérifie le navigateur'));
+    });
+
+    // Init
+    populateFoods();
+    renderTable();
+  </script>
+</body>
+</html>
